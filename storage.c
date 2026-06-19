@@ -139,11 +139,12 @@ void storage_load(Storage *s) {
     fseek(f, 0, SEEK_END);
     long len = ftell(f);
     fseek(f, 0, SEEK_SET);
+    if (len < 0) { fclose(f); return; }
 
     char *buf = malloc(len + 1);
     if (!buf) { fclose(f); return; }
-    fread(buf, 1, len, f);
-    buf[len] = '\0';
+    size_t got = fread(buf, 1, len, f);
+    buf[got] = '\0';
     fclose(f);
 
     // Parse entries: find "url":"...", "title":"...", "time":...
@@ -169,9 +170,14 @@ void storage_load(Storage *s) {
         json_unescape(p, url_end, e->url, sizeof(e->url));
         p = (char *)url_end + 1;
 
+        // Bound title/time to this object so a malformed entry can't borrow
+        // fields from the next one (the next entry begins at the following "url").
+        char *obj_end = strstr(p, "\"url\":\"");
+        size_t span = obj_end ? (size_t)(obj_end - p) : strlen(p);
+
         // Extract title
         char *t = strstr(p, "\"title\":\"");
-        if (t) {
+        if (t && (size_t)(t - p) < span) {
             t += 9;
             const char *title_end = json_string_end(t);
             if (title_end) {
@@ -181,7 +187,7 @@ void storage_load(Storage *s) {
 
         // Extract time
         char *tm = strstr(p, "\"time\":");
-        if (tm) {
+        if (tm && (size_t)(tm - p) < span) {
             tm += 7;
             e->timestamp = atol(tm);
         }
@@ -273,11 +279,12 @@ int session_load(const char *filepath, char urls[][2048], int max_urls) {
     fseek(f, 0, SEEK_END);
     long len = ftell(f);
     fseek(f, 0, SEEK_SET);
+    if (len < 0) { fclose(f); return 0; }
 
     char *buf = malloc(len + 1);
     if (!buf) { fclose(f); return 0; }
-    fread(buf, 1, len, f);
-    buf[len] = '\0';
+    size_t got = fread(buf, 1, len, f);
+    buf[got] = '\0';
     fclose(f);
 
     int count = 0;

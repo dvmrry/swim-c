@@ -22,11 +22,13 @@ void registry_add(CommandRegistry *r, const char *name, const char *alias,
         r->commands = tmp;
         r->capacity = new_cap;
     }
-    Command *c = &r->commands[r->count++];
+    Command *c = &r->commands[r->count];
     c->name = strdup(name);
+    if (!c->name) return;  // OOM — don't leave a NULL-named slot in the registry
     c->alias = alias ? strdup(alias) : NULL;
     c->fn = fn;
     c->description = description ? strdup(description) : NULL;
+    r->count++;
 }
 
 static Command *find_command(CommandRegistry *r, const char *name) {

@@ -153,11 +153,14 @@ static char *http_request(const char *method, const char *path,
     // Read response
     int cap = 65536;
     char *buf = malloc(cap);
+    if (!buf) { close(fd); return NULL; }
     int total = 0;
     while (1) {
         if (total >= cap - 1) {
             cap *= 2;
-            buf = realloc(buf, cap);
+            char *tmp = realloc(buf, cap);
+            if (!tmp) { free(buf); close(fd); return NULL; }
+            buf = tmp;
         }
         int n = (int)read(fd, buf + total, cap - 1 - total);
         if (n <= 0) break;

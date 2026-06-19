@@ -769,8 +769,8 @@ static NSDictionary *do_scroll(NSDictionary *json, ServeContext *ctx) {
 
     NSString *escapedSel = js_escape_sq(selector);
 
-    NSString *behavior = json[@"behavior"] ?: @"smooth";
-    NSString *block = json[@"block"] ?: @"center";
+    NSString *behavior = js_escape_sq(json[@"behavior"] ?: @"smooth");
+    NSString *block = js_escape_sq(json[@"block"] ?: @"center");
 
     NSString *js = [NSString stringWithFormat:
         @"(function(){"
@@ -967,6 +967,7 @@ static NSDictionary *do_upload(NSDictionary *json, ServeContext *ctx) {
     NSString *escapedSel = js_escape_sq(selector);
     NSString *escapedName = js_escape_sq(filename);
     NSString *escapedMime = js_escape_sq(mimeType);
+    NSString *escapedData = js_escape_sq(data);
 
     NSString *js = [NSString stringWithFormat:
         @"(function(){"
@@ -987,7 +988,7 @@ static NSDictionary *do_upload(NSDictionary *json, ServeContext *ctx) {
         "  return JSON.stringify({ok:true,filename:'%@',size:bytes.length})"
         "}catch(e){return JSON.stringify({ok:false,error:e.message})}"
         "})()",
-        escapedSel, data, escapedName, escapedMime, escapedName];
+        escapedSel, escapedData, escapedName, escapedMime, escapedName];
 
     return with_state(eval_js_sync(ctx, js, @"upload", 5.0, false), ctx);
 }
