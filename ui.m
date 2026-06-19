@@ -4,6 +4,7 @@
 #include <strings.h>
 #include <math.h>
 #include "ui.h"
+#include "zoom.h"
 
 #define MAX_TABS 128
 
@@ -313,6 +314,13 @@ static SwimTabBarHandler *sTabBarHandler;
     (void)navigation;
     const char *url = [webView.URL.absoluteString UTF8String];
     const char *title = [webView.title UTF8String];
+
+    // Restore this domain's remembered zoom (reset to default for unknown hosts).
+    NSString *zhost = webView.URL.host;
+    if (zhost.length) {
+        double z = zoom_get(zhost.UTF8String);
+        webView.pageZoom = (z > 0.0) ? z : 1.0;
+    }
     if (self.callbacks.on_nav_error) {
         self.callbacks.on_nav_error(NULL, self.tabId, self.callbacks.ctx);
     }
@@ -1472,17 +1480,21 @@ void ui_zoom_in(SwimUI *ui) {
     if (ui->active_tab < 0) return;
     WKWebView *wv = ui->tabs[ui->active_tab].webview;
     wv.pageZoom = fmin(wv.pageZoom + 0.1, 3.0);
+    if (wv.URL.host.length) zoom_set(wv.URL.host.UTF8String, wv.pageZoom);
 }
 
 void ui_zoom_out(SwimUI *ui) {
     if (ui->active_tab < 0) return;
     WKWebView *wv = ui->tabs[ui->active_tab].webview;
     wv.pageZoom = fmax(wv.pageZoom - 0.1, 0.3);
+    if (wv.URL.host.length) zoom_set(wv.URL.host.UTF8String, wv.pageZoom);
 }
 
 void ui_zoom_reset(SwimUI *ui) {
     if (ui->active_tab < 0) return;
-    ui->tabs[ui->active_tab].webview.pageZoom = 1.0;
+    WKWebView *wv = ui->tabs[ui->active_tab].webview;
+    wv.pageZoom = 1.0;
+    if (wv.URL.host.length) zoom_set(wv.URL.host.UTF8String, 1.0);  // forgets host
 }
 
 void ui_set_window_title(SwimUI *ui, const char *title) {

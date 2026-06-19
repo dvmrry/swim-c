@@ -8,6 +8,7 @@
 #include "userscript.h"
 #include "focus.h"
 #include "serve.h"
+#include "zoom.h"
 
 // --- App State ---
 
@@ -868,41 +869,45 @@ static int url_complete_idx;
 static const char *on_command_complete(const char *prefix, const char *cmd_prefix, void *ctx) {
     (void)ctx;
 
-    // URL completion for open/tabopen commands
-    if (cmd_prefix[0]) {
-        int results[64];
-        int count = storage_search(&app.history, prefix, results, 64);
-        int bm_results[64];
-        int bm_count = storage_search(&app.bookmarks, prefix, bm_results, 64);
+    // Command-name completion when not completing an open/tabopen argument.
+    if (!cmd_prefix[0])
+        return registry_complete(&app.commands, prefix);
 
-        // On first tab or new prefix, reset index
-        static char last_prefix[256];
-        if (strcmp(prefix, last_prefix) != 0) {
-            url_complete_idx = 0;
-            snprintf(last_prefix, sizeof(last_prefix), "%s", prefix);
-        } else {
-            url_complete_idx++;
-        }
-
-        // Cycle through bookmarks first, then history
-        if (url_complete_idx < bm_count) {
-            snprintf(url_complete_buf, sizeof(url_complete_buf), "%s",
-                app.bookmarks.entries[bm_results[url_complete_idx]].url);
-            return url_complete_buf;
-        }
-        int hist_idx = url_complete_idx - bm_count;
-        if (hist_idx < count) {
-            snprintf(url_complete_buf, sizeof(url_complete_buf), "%s",
-                app.history.entries[results[hist_idx]].url);
-            return url_complete_buf;
-        }
-        // Wrap around
-        url_complete_idx = -1;  // will increment to 0 next time
-        return NULL;
+    // URL argument completion against bookmarks + history.
+    // After the first Tab the command bar holds our last completion, so an
+    // incoming `prefix` equal to it means "cycle", not "new query" — keep
+    // searching with the user's original fragment stored in `base`.
+    static char base[256];
+    static char last_ret[2048];
+    if (last_ret[0] && strcmp(prefix, last_ret) == 0) {
+        url_complete_idx++;
+    } else {
+        snprintf(base, sizeof(base), "%s", prefix);
+        url_complete_idx = 0;
     }
 
-    // Command name completion
-    return registry_complete(&app.commands, prefix);
+    int bm[64], hi[64];
+    int bm_n = storage_search(&app.bookmarks, base, bm, 64);
+    int hi_n = storage_search(&app.history, base, hi, 64);
+
+    // Bookmarks first, then history, de-duplicated by URL.
+    const char *cand[128];
+    int n = 0;
+    for (int i = 0; i < bm_n && n < 128; i++)
+        cand[n++] = app.bookmarks.entries[bm[i]].url;
+    for (int i = 0; i < hi_n && n < 128; i++) {
+        const char *u = app.history.entries[hi[i]].url;
+        bool dup = false;
+        for (int j = 0; j < n; j++)
+            if (strcmp(cand[j], u) == 0) { dup = true; break; }
+        if (!dup) cand[n++] = u;
+    }
+    if (n == 0) { last_ret[0] = '\0'; return NULL; }
+
+    url_complete_idx %= n;  // wrap through the candidate list
+    snprintf(url_complete_buf, sizeof(url_complete_buf), "%s", cand[url_complete_idx]);
+    snprintf(last_ret, sizeof(last_ret), "%s", url_complete_buf);
+    return url_complete_buf;
 }
 
 static void on_tab_selected(int index, void *ctx) {
@@ -988,6 +993,9 @@ int main(int argc, const char *argv[]) {
         storage_init(&app.history, hist_path);
         storage_load(&app.bookmarks);
         storage_load(&app.history);
+        char zoom_path[512];
+        snprintf(zoom_path, sizeof(zoom_path), "%s/.config/swim/zoom.json", home);
+        zoom_load(zoom_path);
         snprintf(app.session_path, sizeof(app.session_path),
             "%s/.config/swim/session.json", home);
 

@@ -2,10 +2,10 @@ CC = clang
 CFLAGS = -fobjc-arc -Wall -Wextra -Wpedantic -std=c17
 FRAMEWORKS = -framework Cocoa -framework WebKit -framework QuartzCore -framework Network
 
-SRC_C = browser.c input.c commands.c storage.c config.c userscript.c theme.c focus.c
+SRC_C = browser.c input.c commands.c storage.c config.c userscript.c theme.c focus.c zoom.c
 SRC_M = main.m ui.m serve.m
 SRC = $(SRC_C) $(SRC_M)
-HEADERS = browser.h input.h commands.h ui.h storage.h config.h userscript.h theme.h focus.h serve.h
+HEADERS = browser.h input.h commands.h ui.h storage.h config.h userscript.h theme.h focus.h serve.h zoom.h
 
 JS_INC = focus_js.inc extract_js.inc interact_js.inc console_js.inc requests_js.inc \
          old-reddit_js.inc youtube-adblock_js.inc dark-mode_js.inc
