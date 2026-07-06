@@ -7,7 +7,6 @@
 #include "config.h"
 #include "userscript.h"
 #include "focus.h"
-#include "serve.h"
 #include "zoom.h"
 
 // --- App State ---
@@ -941,19 +940,10 @@ int main(int argc, const char *argv[]) {
         [menuBar addItem:editMenuItem];
         [NSApp setMainMenu:menuBar];
 
-        const char *serve_addr = NULL;
-        bool serve = false;
         const char *profile = NULL;
         const char *app_url = NULL;
         for (int i = 1; i < argc; i++) {
-            if (strcmp(argv[i], "--serve") == 0) {
-                serve = true;
-                if (i + 1 < argc) {
-                    char c = argv[i + 1][0];
-                    if (c == '/' || c == '.' || (c >= '0' && c <= '9'))
-                        serve_addr = argv[++i];
-                }
-            } else if (strcmp(argv[i], "--app") == 0 && i + 1 < argc) {
+            if (strcmp(argv[i], "--app") == 0 && i + 1 < argc) {
                 app_url = argv[++i];
             } else if (strcmp(argv[i], "--profile") == 0 && i + 1 < argc) {
                 profile = argv[++i];
@@ -1109,10 +1099,7 @@ int main(int argc, const char *argv[]) {
             // CLI arguments: ./swim url1 url2 ...
             for (int i = 1; i < argc; i++) {
                 if (argv[i][0] == '-') {
-                    if (strcmp(argv[i], "--serve") == 0 && i + 1 < argc) {
-                        char c = argv[i + 1][0];
-                        if (c == '/' || c == '.' || (c >= '0' && c <= '9')) i++;
-                    } else if (strcmp(argv[i], "--profile") == 0 && i + 1 < argc) {
+                    if (strcmp(argv[i], "--profile") == 0 && i + 1 < argc) {
                         i++;
                     } else if (strcmp(argv[i], "--app") == 0 && i + 1 < argc) {
                         i++;
@@ -1143,19 +1130,6 @@ int main(int argc, const char *argv[]) {
             if (!opened) {
                 create_tab(app.config.homepage);
             }
-        }
-
-        if (serve) {
-            static ServeContext serve_ctx;
-            serve_ctx = (ServeContext){
-                .ui = app.ui,
-                .browser = &app.browser,
-                .mode = &app.mode,
-                .commands = &app.commands,
-                .handle_action = handle_action,
-                .action_ctx = &app,
-            };
-            serve_start(serve_addr, &serve_ctx);
         }
 
         // Key event monitor (skip in app mode — all keys pass through)

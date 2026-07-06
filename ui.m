@@ -12,14 +12,6 @@ static NSString *const kUserAgent =
     @"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) "
     "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
 
-// Injected JS hooks (compiled from js/*.js via Makefile)
-static const char *kConsoleHookJS =
-#include "console_js.inc"
-;
-static const char *kRequestsHookJS =
-#include "requests_js.inc"
-;
-
 static NSString *const kFocusJS =
     @"document.addEventListener('focusin', function(e) {"
     "var t = e.target.tagName;"
@@ -754,17 +746,6 @@ static WKWebView *create_webview(SwimUI *ui, int tab_id, bool private_tab, SwimN
         config.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
     }
     [config.userContentController addScriptMessageHandler:ui->scriptHandler name:@"swim"];
-
-    // Early hooks — inject at DocumentStart to capture before page JS runs
-    void (^addScript)(const char *, WKUserScriptInjectionTime) =
-        ^(const char *src, WKUserScriptInjectionTime timing) {
-        WKUserScript *s = [[WKUserScript alloc]
-            initWithSource:[NSString stringWithUTF8String:src]
-            injectionTime:timing forMainFrameOnly:YES];
-        [config.userContentController addUserScript:s];
-    };
-    addScript(kConsoleHookJS, WKUserScriptInjectionTimeAtDocumentStart);
-    addScript(kRequestsHookJS, WKUserScriptInjectionTimeAtDocumentStart);
 
     // Focus detection
     WKUserScript *focusScript = [[WKUserScript alloc]
@@ -1723,4 +1704,3 @@ void *ui_get_dialog_queue(SwimUI *ui) {
     if (!ui->dialog_queue) ui->dialog_queue = [NSMutableArray new];
     return (__bridge void *)ui->dialog_queue;
 }
-

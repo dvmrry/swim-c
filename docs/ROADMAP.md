@@ -12,19 +12,15 @@ In practice:
 
 - **Invest in:** polish, stability, and removing daily friction for a human.
 - **Don't build:** the automation platform (see Not Planned below).
-- **API/MCP frozen:** the HTTP API (`--serve`) and MCP sidecar get
-  correctness and security fixes only — no new endpoints. They're opt-in
-  and cost nothing when idle, and they keep swim's one real wedge: AI
-  driving *your* authenticated browser (sessions, adblock, userscripts)
-  instead of a blank Chromium.
-- **Tripwire:** if `--serve` goes unused for a few months, delete the
-  automation layer outright (serve.m, swim-mcp.c, js hooks). Full history
-  is preserved on the archive remote.
+- **Automation removed:** the HTTP API (`--serve`), MCP sidecar, and JS
+  automation hooks were removed in 2026-07.
+- **Tripwire resolved:** full automation-layer history is preserved on the
+  archive remote.
 
 ## Current State
 
 Minimalist vi-mode browser for macOS. C/Objective-C, Cocoa + WKWebView.
-Single developer, AI-assisted. Two binaries: swim, swim-mcp.
+Single developer, AI-assisted. One binary: swim.
 
 ### Shipped
 
@@ -44,8 +40,6 @@ Single developer, AI-assisted. Two binaries: swim, swim-mcp.
 - Count prefix (5j), repeat last action (.)
 - App mode (`--app <url>`: chromeless single-window)
 - Profiles (`--profile <name>` config overlays)
-- HTTP API server (`swim --serve`, Unix socket default) — frozen
-- MCP sidecar (`swim-mcp`) — frozen
 
 ## Daily-Driver Backlog
 
@@ -71,9 +65,10 @@ The original Phase 2: an SSE event stream, session recording/replay, a
 workflow sidecar (swim-auto), and an `:ai` copilot. Dropped — it
 reimplements what CDP-based tools already do better, on a JS-injection
 foundation with a hard ceiling. Recorded here so it doesn't get
-re-invented. If full network inspection is ever genuinely needed, the
-WebKit Inspector Protocol (private API) is the only route worth taking —
-not more JS monkey-patching.
+re-invented. The HTTP API, MCP sidecar, and automation hooks were deleted
+in 2026-07; history is preserved on the archive remote. If full network
+inspection is ever genuinely needed, the WebKit Inspector Protocol
+(private API) is the only route worth taking — not more JS monkey-patching.
 
 ## Exploratory
 
@@ -81,7 +76,7 @@ not more JS monkey-patching.
   swiftc and clang link fine from the Makefile, no Xcode. Candidate order:
   zoom.c (one evening, proves the toolchain) → storage.c (Codable deletes
   the hand-rolled JSON parser) → input/commands/config/theme →
-  main.m/ui.m. The frozen API layer never gets ported. Motivation is craft
+  main.m/ui.m. Motivation is craft
   plus deleting the memory-unsafety bug class, not urgency.
 - **libswim.** Unchanged gate: only when a second consumer actually exists.
 
@@ -99,8 +94,8 @@ not more JS monkey-patching.
    ui.m.
 2. **Webview is opaque.** The `void *webview` in Tab is the only bridge
    between core and platform.
-3. **Actions and commands are the API boundary.** Everything the user (or
-   the frozen API) does flows through handle_action or registry_exec.
+3. **Actions and commands are the internal boundary.** Everything the user
+   does flows through handle_action or registry_exec.
 4. **The wrapper is thin.** Platform layer: create window, create webview,
    navigate, run JS, screenshot, handle events. The core does the rest.
 

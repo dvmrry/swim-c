@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "swim": {
-      "command": "./swim-mcp",
-      "args": [],
-      "autoApprove": ["swim"]
-    }
-  }
-}
