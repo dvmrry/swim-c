@@ -103,7 +103,7 @@ static void parse_header(UserScript *script, const char *source) {
                 script->match[script->match_count][len] = '\0';
                 script->match_count++;
             }
-        } else if (strncmp(line, "@run-at", 7) == 0) {
+        } else if (strncmp(line, "@run-at", 7) == 0 && (line[7] == ' ' || line[7] == '\t')) {
             const char *val = line + 7;
             while (val < eol && *val == ' ') val++;
             if (strncmp(val, "document-start", 14) == 0) {

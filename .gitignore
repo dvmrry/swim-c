@@ -8,5 +8,7 @@ result
 *.inc
 test-screenshots/
 test-ui.sh
+test/storage_test
+test/zoom_test
 Screenshot*.png
 docs/plans/

@@ -18,12 +18,24 @@ swim: $(SRC) $(HEADERS) $(JS_INC) Info.plist
 swim-mcp: swim-mcp.c
 	$(CC) -Wall -Wextra -Wpedantic -std=c17 swim-mcp.c -o swim-mcp
 
+# Tests build as separate binaries — never linked into the release build
+TESTS = test/storage_test test/zoom_test
+
+test: $(TESTS)
+	@./test/storage_test && ./test/zoom_test
+
+test/storage_test: test/storage_test.c storage.c storage.h
+	$(CC) -Wall -Wextra -std=c17 -I. test/storage_test.c -o $@
+
+test/zoom_test: test/zoom_test.c zoom.c zoom.h storage.h
+	$(CC) -Wall -Wextra -std=c17 -I. test/zoom_test.c -o $@
+
 # Convert .js to C string literals for embedding
 %_js.inc: js/%.js
 	@echo "Generating $@"
 	@sed 's/\\/\\\\/g; s/"/\\"/g; s/^/"/; s/$$/\\n"/' $< > $@
 
 clean:
-	rm -f swim swim-mcp $(JS_INC)
+	rm -f swim swim-mcp $(JS_INC) $(TESTS)
 
-.PHONY: clean all
+.PHONY: clean all test

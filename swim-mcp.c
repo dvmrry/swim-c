@@ -266,20 +266,24 @@ static void send_mcp_result(const char *id_str, int id_int, bool id_is_string,
     free(buf);
 }
 
+static char *json_escape(const char *str);
+
 static void send_mcp_error(const char *id_str, int id_int, bool id_is_string,
                            int code, const char *message) {
+    char *escaped = json_escape(message);  // quotes/newlines would break the frame
     char buf[4096];
     if (id_is_string) {
         snprintf(buf, sizeof(buf),
             "{\"jsonrpc\":\"2.0\",\"id\":\"%s\","
             "\"error\":{\"code\":%d,\"message\":\"%s\"}}",
-            id_str, code, message);
+            id_str, code, escaped);
     } else {
         snprintf(buf, sizeof(buf),
             "{\"jsonrpc\":\"2.0\",\"id\":%d,"
             "\"error\":{\"code\":%d,\"message\":\"%s\"}}",
-            id_int, code, message);
+            id_int, code, escaped);
     }
+    free(escaped);
     send_mcp(buf);
 }
 
@@ -772,7 +776,11 @@ static char *handle_tool_call(const char *name, const char *arguments) {
 // Read a single byte from stdin (raw fd, no buffering issues)
 static int read_byte(void) {
     unsigned char c;
-    int n = (int)read(STDIN_FILENO, &c, 1);
+    int n;
+    do {
+        n = (int)read(STDIN_FILENO, &c, 1);
+    } while (n < 0 && errno == EINTR);  // a signal is not EOF
+
     if (g_dbg && n == 1) { fprintf(g_dbg, "%c", c); fflush(g_dbg); }
     if (g_dbg && n != 1) { fprintf(g_dbg, "\n[EOF n=%d errno=%d]\n", n, errno); fflush(g_dbg); }
     return (n == 1) ? c : -1;

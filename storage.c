@@ -117,10 +117,11 @@ void storage_save(Storage *s) {
     fprintf(f, "[\n");
     for (int i = 0; i < s->count; i++) {
         StorageEntry *e = &s->entries[i];
-        char escaped_url[4096];
+        // Worst case: every byte escapes to \uXXXX (6x the source field)
+        char escaped_url[2048 * 6 + 1];
         json_escape(e->url, escaped_url, sizeof(escaped_url));
 
-        char escaped_title[512];
+        char escaped_title[256 * 6 + 1];
         json_escape(e->title, escaped_title, sizeof(escaped_title));
 
         fprintf(f, "  {\"url\":\"%s\",\"title\":\"%s\",\"time\":%ld}%s\n",
@@ -189,7 +190,7 @@ void storage_load(Storage *s) {
         char *tm = strstr(p, "\"time\":");
         if (tm && (size_t)(tm - p) < span) {
             tm += 7;
-            e->timestamp = atol(tm);
+            e->timestamp = strtol(tm, NULL, 10);  // clamps on overflow, unlike atol
         }
 
         s->count++;
@@ -264,7 +265,7 @@ void session_save(const char *filepath, const char **urls, int count) {
     if (!f) return;
     fprintf(f, "[\n");
     for (int i = 0; i < count; i++) {
-        char escaped[4096];
+        char escaped[2048 * 6 + 1];  // worst case: every byte escapes to \uXXXX
         json_escape(urls[i], escaped, sizeof(escaped));
         fprintf(f, "  \"%s\"%s\n", escaped, (i < count - 1) ? "," : "");
     }
