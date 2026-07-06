@@ -4,9 +4,9 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
+#include "zoom.h"
 
 void storage_ensure_dir(void) {}  // stub: keep the test standalone
-#include "zoom.c"
 
 static int near(double a, double b) { return fabs(a - b) < 0.005; }
 
