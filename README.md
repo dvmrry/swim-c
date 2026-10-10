@@ -1,4 +1,9 @@
-# swim
+# swim (C) — archived
+
+> **Archived.** This is the original C/Objective-C implementation, frozen at tag
+> `c-final`. swim continues as a Swift rewrite at
+> [github.com/dvmrry/swim](https://github.com/dvmrry/swim) — see
+> [`docs/SWIFT-KICKOFF.md`](docs/SWIFT-KICKOFF.md) for the spec it was built from.
 
 Minimalist vi-mode web browser for macOS, written in C/Objective-C (Cocoa + WebKit).
 
